@@ -26,7 +26,7 @@ RAW_DIR       = os.path.join(BASE_DIR, "raw")
 PROCESSED_DIR = os.path.join(BASE_DIR, "processed")
 
 # Limit how many orders we process for graph construction (for speed)
-MAX_ORDERS = 500_000
+MAX_ORDERS = 50_000
 
 
 def load_product_names() -> dict:
@@ -109,9 +109,12 @@ def detect_communities(G: nx.Graph) -> dict:
     """
     print("  Detecting communities (Greedy Modularity) …")
     t0 = time.time()
-    # Work on the largest connected component
-    largest_cc = max(nx.connected_components(G), key=len)
-    G_sub = G.subgraph(largest_cc).copy()
+    # Work on top 1,500 highest degree nodes for fast community detection
+    if G.number_of_nodes() > 1500:
+        top_nodes = [node for node, degree in sorted(G.degree(), key=lambda x: -x[1])[:1500]]
+        G_sub = G.subgraph(top_nodes).copy()
+    else:
+        G_sub = G
 
     communities = nx.community.greedy_modularity_communities(G_sub, weight="weight")
     community_map = {}
