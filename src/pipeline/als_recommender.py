@@ -49,19 +49,19 @@ def get_spark() -> SparkSession:
 
 
 def load_matrix(spark: SparkSession):
-    parquet_path = os.path.join(PROCESSED_DIR, "user_product_matrix.parquet")
     csv_path     = os.path.join(PROCESSED_DIR, "user_product_matrix.csv")
+    parquet_path = os.path.join(PROCESSED_DIR, "user_product_matrix.parquet")
 
-    if os.path.exists(parquet_path):
-        print(f"  Loading interaction matrix from Parquet ({parquet_path}) …")
-        df = spark.read.parquet(parquet_path)
-    elif os.path.exists(csv_path):
-        print(f"  Loading interaction matrix from CSV fallback ({csv_path}) …")
+    if os.path.isfile(csv_path):
+        print(f"  Loading interaction matrix from CSV ({csv_path}) …")
         df = spark.read.option("header", "true").csv(csv_path)
         df = df.withColumn("user_id", F.col("user_id").cast(IntegerType()))
         df = df.withColumn("product_id", F.col("product_id").cast(IntegerType()))
+    elif os.path.exists(parquet_path):
+        print(f"  Loading interaction matrix from Parquet ({parquet_path}) …")
+        df = spark.read.parquet(parquet_path)
     else:
-        raise FileNotFoundError("Neither user_product_matrix.parquet nor user_product_matrix.csv was found.")
+        raise FileNotFoundError("user_product_matrix file not found.")
 
     df = df.withColumn("interaction_score", F.col("interaction_score").cast(FloatType()))
     return df

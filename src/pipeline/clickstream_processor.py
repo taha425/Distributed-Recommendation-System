@@ -207,17 +207,13 @@ def run(spark: SparkSession):
     # ── Interaction Matrix ───────────────────────────────────────
     print("  Building user-product interaction matrix …")
     matrix_df = build_interaction_matrix(df)
-    matrix_path_parquet = os.path.join(PROCESSED_DIR, "user_product_matrix.parquet")
-    matrix_path_csv     = os.path.join(PROCESSED_DIR, "user_product_matrix.csv")
+    matrix_path_csv = os.path.join(PROCESSED_DIR, "user_product_matrix.csv")
 
-    try:
-        matrix_df.write.mode("overwrite").parquet(matrix_path_parquet)
-    except Exception:
-        print("  ℹ (Hadoop winutils fallback: saving user_product_matrix as CSV)")
-        pdf = matrix_df.toPandas()
-        pdf.to_csv(matrix_path_csv, index=False)
+    print("  Saving user_product_matrix to CSV …")
+    pdf = matrix_df.toPandas()
+    pdf.to_csv(matrix_path_csv, index=False)
 
-    matrix_size = matrix_df.count()
+    matrix_size = len(pdf)
     print(f"  Matrix size: {matrix_size:,} user-product pairs")
 
     # ── User Activity ────────────────────────────────────────────
