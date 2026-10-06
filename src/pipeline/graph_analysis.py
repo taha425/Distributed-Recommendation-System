@@ -130,13 +130,13 @@ def compute_centrality(G: nx.Graph) -> dict:
     """Compute degree centrality and betweenness centrality (sampled)."""
     print("  Computing centrality measures …")
     degree_centrality = nx.degree_centrality(G)
-    # Betweenness is expensive; compute on subgraph
-    if G.number_of_nodes() > 5000:
-        nodes_sample = list(G.nodes())[:5000]
+    # Betweenness is O(V * E); sample top 500 nodes for speed
+    if G.number_of_nodes() > 500:
+        nodes_sample = [node for node, degree in sorted(G.degree(), key=lambda x: -x[1])[:500]]
         G_small = G.subgraph(nodes_sample)
     else:
         G_small = G
-    betweenness = nx.betweenness_centrality(G_small, weight="weight", normalized=True)
+    betweenness = nx.betweenness_centrality(G_small, normalized=True)
     return degree_centrality, betweenness
 
 
