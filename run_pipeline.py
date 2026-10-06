@@ -40,9 +40,9 @@ def banner(title: str):
 
 
 def step(n: int, title: str):
-    print(f"\n{'─'*60}")
+    print("\n" + "-" * 60)
     print(f"  STEP {n}: {title}")
-    print(f"{'─'*60}")
+    print("-" * 60)
 
 
 def check_raw_data() -> bool:
@@ -140,11 +140,11 @@ def main():
     total_elapsed = time.time() - t_total
     pipeline_summary["total_time_sec"] = round(total_elapsed, 1)
 
-    banner("Pipeline Complete! ✅")
+    banner("Pipeline Complete! [OK]")
     print(f"\n  Total time: {total_elapsed:.1f}s\n")
 
     for stage, info in pipeline_summary["stages"].items():
-        status = "✓" if info["status"] == "completed" else "✗"
+        status = "[OK]" if info["status"] == "completed" else "[X]"
         print(f"  {status} {stage:<25} {info['time_sec']}s")
 
     summary_path = os.path.join(PROCESSED_DIR, "pipeline_summary.json")
@@ -154,8 +154,8 @@ def main():
 
     print(f"\n  Results saved in: data/processed/")
     print(f"  Pipeline summary: {summary_path}")
-    print(f"\n  → Start the dashboard: python src/api/app.py")
-    print(f"  → Then open:           http://localhost:5000\n")
+    print(f"\n  -> Start the dashboard: python src/api/app.py")
+    print(f"  -> Then open:           http://localhost:5000\n")
 
 
 if __name__ == "__main__":
