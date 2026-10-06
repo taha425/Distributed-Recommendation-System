@@ -181,9 +181,6 @@ def run(spark: SparkSession):
     # ── Top Products ─────────────────────────────────────────────
     print("  Computing top products …")
     top_products_df = compute_top_products(df, 200)
-    top_products_df.write.mode("overwrite").parquet(
-        os.path.join(PROCESSED_DIR, "top_products.parquet")
-    )
     top_products_list = [
         {
             "product_id":         int(row["product_id"]),
@@ -194,6 +191,14 @@ def run(spark: SparkSession):
         }
         for row in top_products_df.collect()
     ]
+    try:
+        top_products_df.write.mode("overwrite").parquet(
+            os.path.join(PROCESSED_DIR, "top_products.parquet")
+        )
+    except Exception as e:
+        print("  ℹ (Hadoop winutils fallback: saving top_products as JSON)")
+        with open(os.path.join(PROCESSED_DIR, "top_products.json"), "w") as f:
+            json.dump(top_products_list, f, indent=2)
 
     # ── Conversion Funnel ────────────────────────────────────────
     print("  Computing conversion funnel …")
@@ -202,17 +207,28 @@ def run(spark: SparkSession):
     # ── Interaction Matrix ───────────────────────────────────────
     print("  Building user-product interaction matrix …")
     matrix_df = build_interaction_matrix(df)
-    matrix_path = os.path.join(PROCESSED_DIR, "user_product_matrix.parquet")
-    matrix_df.write.mode("overwrite").parquet(matrix_path)
+    matrix_path_parquet = os.path.join(PROCESSED_DIR, "user_product_matrix.parquet")
+    matrix_path_csv     = os.path.join(PROCESSED_DIR, "user_product_matrix.csv")
+
+    try:
+        matrix_df.write.mode("overwrite").parquet(matrix_path_parquet)
+    except Exception:
+        print("  ℹ (Hadoop winutils fallback: saving user_product_matrix as CSV)")
+        pdf = matrix_df.toPandas()
+        pdf.to_csv(matrix_path_csv, index=False)
+
     matrix_size = matrix_df.count()
     print(f"  Matrix size: {matrix_size:,} user-product pairs")
 
     # ── User Activity ────────────────────────────────────────────
     print("  Computing user activity stats …")
     user_activity_df = compute_user_activity(df)
-    user_activity_df.write.mode("overwrite").parquet(
-        os.path.join(PROCESSED_DIR, "user_activity.parquet")
-    )
+    try:
+        user_activity_df.write.mode("overwrite").parquet(
+            os.path.join(PROCESSED_DIR, "user_activity.parquet")
+        )
+    except Exception:
+        print("  ℹ (Hadoop winutils fallback: user_activity.parquet skipped)")
 
     # ── Summary Stats ────────────────────────────────────────────
     elapsed = time.time() - t0

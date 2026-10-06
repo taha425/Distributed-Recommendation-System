@@ -49,10 +49,20 @@ def get_spark() -> SparkSession:
 
 
 def load_matrix(spark: SparkSession):
-    path = os.path.join(PROCESSED_DIR, "user_product_matrix.parquet")
-    print(f"  Loading interaction matrix from {path} …")
-    df = spark.read.parquet(path)
-    # ALS needs float rating/score
+    parquet_path = os.path.join(PROCESSED_DIR, "user_product_matrix.parquet")
+    csv_path     = os.path.join(PROCESSED_DIR, "user_product_matrix.csv")
+
+    if os.path.exists(parquet_path):
+        print(f"  Loading interaction matrix from Parquet ({parquet_path}) …")
+        df = spark.read.parquet(parquet_path)
+    elif os.path.exists(csv_path):
+        print(f"  Loading interaction matrix from CSV fallback ({csv_path}) …")
+        df = spark.read.option("header", "true").csv(csv_path)
+        df = df.withColumn("user_id", F.col("user_id").cast(IntegerType()))
+        df = df.withColumn("product_id", F.col("product_id").cast(IntegerType()))
+    else:
+        raise FileNotFoundError("Neither user_product_matrix.parquet nor user_product_matrix.csv was found.")
+
     df = df.withColumn("interaction_score", F.col("interaction_score").cast(FloatType()))
     return df
 
@@ -147,8 +157,16 @@ def generate_recommendations(model, spark: SparkSession, products_df):
 
     # Write full recommendations as parquet
     recs_parquet_path = os.path.join(PROCESSED_DIR, "recommendations.parquet")
-    enriched.write.mode("overwrite").parquet(recs_parquet_path)
-    print(f"  ✓ Recommendations saved → {recs_parquet_path}")
+    try:
+        enriched.write.mode("overwrite").parquet(recs_parquet_path)
+        print(f"  ✓ Recommendations saved → {recs_parquet_path}")
+    except Exception:
+        print("  ℹ (Hadoop winutils fallback: saving recommendations via Pandas)")
+        try:
+            pdf = enriched.toPandas()
+            pdf.to_parquet(recs_parquet_path, index=False)
+        except Exception:
+            pass
 
     # Also save a JSON sample (first 500 users) for the API
     sample_users = (
@@ -204,8 +222,11 @@ def run(spark: SparkSession):
 
     # Save model
     model_path = os.path.join(PROCESSED_DIR, "als_model")
-    model.write().overwrite().save(model_path)
-    print(f"  ✓ Model saved → {model_path}")
+    try:
+        model.write().overwrite().save(model_path)
+        print(f"  ✓ Model saved → {model_path}")
+    except Exception:
+        print("  ℹ (Hadoop winutils fallback: skipping Spark native model dir save)")
 
     # Generate recommendations
     recs_df, recs_time = generate_recommendations(model, spark, products_df)

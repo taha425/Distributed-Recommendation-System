@@ -139,22 +139,35 @@ def generate_amazon_reviews(path: str):
     user_weights    = np.random.zipf(1.3, N_USERS);    user_weights    = user_weights / user_weights.sum()
     product_weights = np.random.zipf(1.5, N_PRODUCTS); product_weights = product_weights / product_weights.sum()
 
+    print("    Pre-sampling user and product distributions for high-speed generation …")
+    # Batch sample 500K at a time to prevent np.random.choice bottleneck in Python loop
+    BATCH_SIZE = 500_000
+
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["review_id", "user_id", "product_id", "rating", "event_type",
                     "timestamp", "session_id", "dwell_seconds"])
-        for rid in range(1, N_REVIEWS + 1):
-            uid   = np.random.choice(N_USERS,    p=user_weights)    + 1
-            pid   = np.random.choice(N_PRODUCTS, p=product_weights) + 1
-            evt   = random.choice(EVENT_TYPES)
-            rating = round(random.gauss(4.0, 1.0), 1) if evt in ("review", "purchase") else None
-            rating = max(1.0, min(5.0, rating)) if rating else None
-            ts    = int(random.uniform(start_ts, end_ts))
-            sess  = f"S{uid:06d}-{random.randint(1, 50):04d}"
-            dwell = int(np.random.exponential(45)) if evt == "view" else 0
-            w.writerow([rid, uid, pid, rating, evt, ts, sess, dwell])
-            if rid % 500_000 == 0:
-                print(f"    … {rid:,} reviews done")
+        
+        rid = 1
+        for batch_idx in range(0, N_REVIEWS, BATCH_SIZE):
+            cur_batch_size = min(BATCH_SIZE, N_REVIEWS - batch_idx)
+            batch_uids = np.random.choice(N_USERS, size=cur_batch_size, p=user_weights) + 1
+            batch_pids = np.random.choice(N_PRODUCTS, size=cur_batch_size, p=product_weights) + 1
+            
+            for i in range(cur_batch_size):
+                uid   = int(batch_uids[i])
+                pid   = int(batch_pids[i])
+                evt   = random.choice(EVENT_TYPES)
+                rating = round(random.gauss(4.0, 1.0), 1) if evt in ("review", "purchase") else ""
+                if rating != "":
+                    rating = max(1.0, min(5.0, rating))
+                ts    = int(random.uniform(start_ts, end_ts))
+                sess  = f"S{uid:06d}-{random.randint(1, 50):04d}"
+                dwell = int(np.random.exponential(45)) if evt == "view" else 0
+                w.writerow([rid, uid, pid, rating, evt, ts, sess, dwell])
+                rid += 1
+
+            print(f"    … {rid - 1:,} / {N_REVIEWS:,} reviews done")
     print(f"  ✓ Reviews saved → {path}")
 
 
