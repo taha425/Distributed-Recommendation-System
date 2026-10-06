@@ -1,0 +1,19 @@
+# Data files / generated output
+data/raw/
+data/processed/
+
+# Python cache / virtual environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# IDE files
+.vscode/
+.idea/
+*.swp

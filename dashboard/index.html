@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RecoSpark — Distributed Recommendation System</title>
+  <meta name="description" content="Real-time distributed recommendation engine powered by Apache Spark MLlib ALS, Graph Analytics, and Clickstream Analysis" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.8.5/dist/d3.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ── SIDEBAR ─────────────────────────────────────────────────────────── -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <path d="M14 2L26 8V20L14 26L2 20V8L14 2Z" fill="url(#hex-grad)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+        <path d="M14 8L20 11V17L14 20L8 17V11L14 8Z" fill="rgba(255,255,255,0.15)"/>
+        <circle cx="14" cy="14" r="3" fill="white"/>
+        <defs>
+          <linearGradient id="hex-grad" x1="2" y1="2" x2="26" y2="26">
+            <stop offset="0%" stop-color="#6366f1"/>
+            <stop offset="100%" stop-color="#8b5cf6"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <span class="brand-name">RecoSpark</span>
+      <span class="brand-sub">BDA Mini Project</span>
+    </div>
+  </div>
+
+  <div class="sidebar-section-label">NAVIGATION</div>
+  <ul class="sidebar-nav">
+    <li><a href="#" class="nav-item active" data-page="overview" id="nav-overview">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Overview
+    </a></li>
+    <li><a href="#" class="nav-item" data-page="recommendations" id="nav-recommendations">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      Recommendations
+    </a></li>
+    <li><a href="#" class="nav-item" data-page="clickstream" id="nav-clickstream">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Clickstream Analysis
+    </a></li>
+    <li><a href="#" class="nav-item" data-page="graph" id="nav-graph">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      Graph Analytics
+    </a></li>
+    <li><a href="#" class="nav-item" data-page="search" id="nav-search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Product Search
+    </a></li>
+    <li><a href="#" class="nav-item" data-page="model" id="nav-model">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      Model Metrics
+    </a></li>
+  </ul>
+
+  <div class="sidebar-section-label" style="margin-top:auto">SYSTEM</div>
+  <div class="system-status-box" id="system-status-box">
+    <div class="status-row"><span class="dot dot-green"></span><span>Spark MLlib</span></div>
+    <div class="status-row"><span class="dot dot-green"></span><span>ALS Model</span></div>
+    <div class="status-row"><span class="dot dot-yellow"></span><span>Elasticsearch</span></div>
+    <div class="status-row"><span class="dot dot-green"></span><span>Redis Cache</span></div>
+  </div>
+</nav>
+
+<!-- ── MAIN CONTENT ────────────────────────────────────────────────────── -->
+<main class="main-content">
+
+  <!-- ── TOPBAR ─────────────────────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <h1 class="page-title" id="page-title">System Overview</h1>
+      <span class="page-badge">Live</span>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-stat">
+        <span class="ts-label">Cache Hit Rate</span>
+        <span class="ts-value" id="cache-hit-rate">—</span>
+      </div>
+      <div class="topbar-stat">
+        <span class="ts-label">Total Events</span>
+        <span class="ts-value" id="total-events-stat">—</span>
+      </div>
+      <button class="btn-refresh" id="btn-refresh" title="Refresh data">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PAGE: OVERVIEW                                                       -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <section class="page active" id="page-overview">
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card gradient-indigo">
+        <div class="kpi-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="kpi-body">
+          <span class="kpi-value" id="kpi-users">100,000</span>
+          <span class="kpi-label">Total Users</span>
+        </div>
+        <div class="kpi-delta kpi-delta-up">↑ 12.4%</div>
+      </div>
+      <div class="kpi-card gradient-purple">
+        <div class="kpi-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        </div>
+        <div class="kpi-body">
+          <span class="kpi-value" id="kpi-products">50,000</span>
+          <span class="kpi-label">Products Indexed</span>
+        </div>
+        <div class="kpi-delta kpi-delta-up">↑ 8.1%</div>
+      </div>
+      <div class="kpi-card gradient-cyan">
+        <div class="kpi-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="kpi-body">
+          <span class="kpi-value" id="kpi-events">5.0M</span>
+          <span class="kpi-label">Clickstream Events</span>
+        </div>
+        <div class="kpi-delta kpi-delta-up">↑ 23.5%</div>
+      </div>
+      <div class="kpi-card gradient-emerald">
+        <div class="kpi-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        </div>
+        <div class="kpi-body">
+          <span class="kpi-value" id="kpi-conversion">17.0%</span>
+          <span class="kpi-label">Conversion Rate</span>
+        </div>
+        <div class="kpi-delta kpi-delta-up">↑ 3.2%</div>
+      </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="chart-row">
+      <div class="chart-card chart-wide">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Hourly Clickstream Activity</h3>
+            <p class="chart-sub">User interaction volume across 24-hour cycle</p>
+          </div>
+          <div class="chart-badge">PySpark ETL</div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chart-hourly" height="200"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Event Distribution</h3>
+            <p class="chart-sub">Interaction type breakdown</p>
+          </div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chart-events" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Conversion Funnel + Tech Stack -->
+    <div class="chart-row">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Conversion Funnel</h3>
+            <p class="chart-sub">Session-level engagement stages</p>
+          </div>
+        </div>
+        <div class="funnel-container" id="funnel-container"></div>
+      </div>
+      <div class="chart-card chart-wide">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Architecture Overview</h3>
+            <p class="chart-sub">Distributed pipeline components</p>
+          </div>
+        </div>
+        <div class="arch-diagram" id="arch-diagram"></div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PAGE: RECOMMENDATIONS                                                -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <section class="page" id="page-recommendations">
+    <div class="page-controls">
+      <div class="control-group">
+        <label class="control-label" for="user-id-input">User ID</label>
+        <input type="number" id="user-id-input" class="text-input" value="42" min="1" max="100000" placeholder="Enter user ID…" />
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="n-recs-input">Top-N</label>
+        <input type="number" id="n-recs-input" class="text-input" value="12" min="1" max="50" />
+      </div>
+      <button class="btn-primary" id="btn-get-recs">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        Get Recommendations
+      </button>
+      <div class="cache-badge" id="cache-badge" style="display:none">
+        <span class="dot dot-green"></span> Cache Hit
+      </div>
+    </div>
+
+    <div class="rec-meta" id="rec-meta" style="display:none">
+      <span id="rec-meta-text"></span>
+    </div>
+
+    <div class="rec-grid" id="rec-grid">
+      <!-- Cards injected by JS -->
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PAGE: CLICKSTREAM                                                    -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <section class="page" id="page-clickstream">
+    <div class="chart-row">
+      <div class="chart-card chart-wide">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Top Products by Interactions</h3>
+            <p class="chart-sub">Most engaged products from clickstream pipeline</p>
+          </div>
+          <div class="chart-badge">Top 20</div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chart-top-products" height="280"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Purchase vs Views</h3>
+            <p class="chart-sub">Conversion signal strength</p>
+          </div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chart-purchase-view" height="280"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trending Table -->
+    <div class="table-card">
+      <div class="table-header">
+        <h3 class="chart-title">Trending Products</h3>
+        <span class="chart-badge">Real-time via Redis</span>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table" id="trending-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Product ID</th>
+              <th>Total Interactions</th>
+              <th>Purchases</th>
+              <th>Views</th>
+              <th>Avg Rating</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody id="trending-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PAGE: GRAPH ANALYTICS                                                -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <section class="page" id="page-graph">
+    <div class="kpi-grid" id="graph-kpi-grid">
+      <!-- Injected by JS -->
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-card chart-wide">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Co-Purchase Network</h3>
+            <p class="chart-sub">Force-directed product relationship graph (D3.js)</p>
+          </div>
+          <div class="chart-badge">GraphX / NetworkX</div>
+        </div>
+        <div id="graph-viz" class="graph-viz-container"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Top PageRank Products</h3>
+            <p class="chart-sub">Most influential nodes in graph</p>
+          </div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chart-pagerank" height="280"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Community Sizes</h3>
+            <p class="chart-sub">Product clusters by community detection</p>
+          </div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chart-communities" height="200"></canvas>
+        </div>
+      </div>
+      <div class="chart-card chart-wide">
+        <div class="chart-header">
+          <h3 class="chart-title">Top Products by PageRank Score</h3>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="pagerank-table">
+            <thead>
+              <tr><th>Rank</th><th>Product</th><th>PageRank</th><th>Degree Centrality</th><th>Community</th></tr>
+            </thead>
+            <tbody id="pagerank-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PAGE: SEARCH                                                         -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <section class="page" id="page-search">
+    <div class="search-hero">
+      <div class="search-wrapper">
+        <svg class="search-icon-big" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="search-input" class="search-input-big" placeholder="Search products… (e.g. wireless headphones, coffee maker)" />
+        <button class="btn-primary" id="btn-search">Search</button>
+      </div>
+      <div class="search-filters">
+        <select id="filter-category" class="select-input">
+          <option value="">All Categories</option>
+        </select>
+        <select id="filter-rating" class="select-input">
+          <option value="">Any Rating</option>
+          <option value="4.5">4.5+ ★</option>
+          <option value="4.0">4.0+ ★</option>
+          <option value="3.5">3.5+ ★</option>
+        </select>
+        <span class="search-algo-badge">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          BM25 Ranking (Elasticsearch-simulated)
+        </span>
+      </div>
+    </div>
+
+    <div class="search-stats" id="search-stats" style="display:none">
+      <span id="search-stats-text"></span>
+    </div>
+
+    <div class="rec-grid" id="search-results-grid"></div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PAGE: MODEL METRICS                                                  -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <section class="page" id="page-model">
+    <div class="chart-row">
+      <div class="metrics-card">
+        <h3 class="metrics-card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 L2 7 L12 12 L22 7 Z"/><path d="M2 17 L12 22 L22 17"/><path d="M2 12 L12 17 L22 12"/></svg>
+          ALS Model Configuration
+        </h3>
+        <div class="metrics-table" id="model-config-table"></div>
+      </div>
+      <div class="metrics-card">
+        <h3 class="metrics-card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Dataset Statistics
+        </h3>
+        <div class="metrics-table" id="data-stats-table"></div>
+      </div>
+      <div class="metrics-card">
+        <h3 class="metrics-card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Performance Metrics
+        </h3>
+        <div class="metrics-table" id="perf-metrics-table"></div>
+      </div>
+    </div>
+
+    <!-- Matrix Factorization Diagram -->
+    <div class="chart-card" style="margin-top:0">
+      <div class="chart-header">
+        <div>
+          <h3 class="chart-title">Matrix Factorization (ALS) — How It Works</h3>
+          <p class="chart-sub">User-Product interaction matrix decomposed into latent factor matrices</p>
+        </div>
+        <div class="chart-badge">MLlib</div>
+      </div>
+      <div class="als-diagram" id="als-diagram"></div>
+    </div>
+
+    <!-- Cache & Pipeline Stats -->
+    <div class="chart-row">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">Redis Cache Statistics</h3>
+        </div>
+        <div class="chart-body">
+          <canvas id="chart-cache" height="180"></canvas>
+        </div>
+      </div>
+      <div class="chart-card chart-wide">
+        <div class="chart-header">
+          <h3 class="chart-title">Pipeline Stage Timing</h3>
+          <p class="chart-sub">End-to-end processing breakdown</p>
+        </div>
+        <div class="chart-body">
+          <canvas id="chart-pipeline-timing" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ── LOADING OVERLAY ─────────────────────────────────────────────────── -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner-ring"></div>
+  <p class="loading-text">Loading data…</p>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
