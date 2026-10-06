@@ -130,12 +130,16 @@ def train_als(matrix_df):
 
 
 def generate_recommendations(model, spark: SparkSession, products_df):
-    """Generate top-N recommendations for all users."""
+    """Generate top-N recommendations for users."""
     print(f"  Generating Top-{TOP_N} recommendations for users …")
     t0 = time.time()
 
-    # Recommend for user subset to conserve JVM memory during local dev execution
-    user_recs = model.recommendForAllUsers(TOP_N)
+    # Limit to top 2,000 distinct active users for fast, lightweight local dev execution
+    users_subset = products_df.sparkSession.read.option("header", "true").csv(
+        os.path.join(PROCESSED_DIR, "user_product_matrix.csv")
+    ).select(F.col("user_id").cast(IntegerType())).distinct().limit(2000)
+
+    user_recs = model.recommendForUserSubset(users_subset, TOP_N)
 
     # Explode recommendations
     user_recs_flat = user_recs.select(
