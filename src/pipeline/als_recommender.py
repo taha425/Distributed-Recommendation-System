@@ -28,11 +28,11 @@ RAW_DIR       = os.path.join(BASE_DIR, "raw")
 PROCESSED_DIR = os.path.join(BASE_DIR, "processed")
 
 # ─── ALS Hyper-parameters ─────────────────────────────────────────────────────
-ALS_RANK          = 50      # Latent factors
-ALS_MAX_ITER      = 20
+ALS_RANK          = 20      # Latent factors (optimized for local dev machine memory)
+ALS_MAX_ITER      = 10      # Fast convergence iterations
 ALS_REG_PARAM     = 0.1
 ALS_COLD_START    = "drop"  # or "nan"
-ALS_IMPLICIT      = True    # Treat interaction_score as implicit feedback
+ALS_IMPLICIT      = True    # Implicit interaction scores
 TOP_N             = 20      # Recommendations per user
 
 
@@ -42,7 +42,9 @@ def get_spark() -> SparkSession:
         .appName("ALSRecommender")
         .master("local[*]")
         .config("spark.driver.memory", "4g")
-        .config("spark.sql.shuffle.partitions", "50")
+        .config("spark.driver.maxResultSize", "2g")
+        .config("spark.sql.shuffle.partitions", "20")
+        .config("spark.default.parallelism", "4")
         .config("spark.ui.enabled", "false")
         .getOrCreate()
     )
@@ -129,10 +131,10 @@ def train_als(matrix_df):
 
 def generate_recommendations(model, spark: SparkSession, products_df):
     """Generate top-N recommendations for all users."""
-    print(f"  Generating Top-{TOP_N} recommendations for all users …")
+    print(f"  Generating Top-{TOP_N} recommendations for users …")
     t0 = time.time()
 
-    # Get recommendations for a sample of 10K users for performance
+    # Recommend for user subset to conserve JVM memory during local dev execution
     user_recs = model.recommendForAllUsers(TOP_N)
 
     # Explode recommendations
