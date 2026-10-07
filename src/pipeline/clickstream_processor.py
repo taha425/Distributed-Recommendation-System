@@ -54,7 +54,7 @@ REVIEWS_SCHEMA = StructType([
 
 def load_reviews(spark: SparkSession):
     path = os.path.join(RAW_DIR, "amazon_reviews.csv")
-    print(f"  Loading reviews from {path} …")
+    print(f"  Loading reviews from {path}...")
     df = (
         spark.read
         .option("header", "true")
@@ -161,7 +161,7 @@ def build_interaction_matrix(df):
 
 def run(spark: SparkSession):
     os.makedirs(PROCESSED_DIR, exist_ok=True)
-    print("\n[Clickstream Processor] Starting …")
+    print("\n[Clickstream Processor] Starting...")
     t0 = time.time()
 
     df = load_reviews(spark)
@@ -169,17 +169,17 @@ def run(spark: SparkSession):
     print(f"  Total events loaded: {total_events:,}")
 
     # ── Event Distribution ───────────────────────────────────────
-    print("  Computing event distribution …")
+    print("  Computing event distribution...")
     event_dist = compute_event_distribution(df)
     event_dist_dict = {row["event_type"]: int(row["count"]) for row in event_dist}
 
     # ── Hourly Activity ──────────────────────────────────────────
-    print("  Computing hourly activity …")
+    print("  Computing hourly activity...")
     hourly = compute_hourly_activity(df)
     hourly_dict = {int(row["hour"]): int(row["count"]) for row in hourly}
 
     # ── Top Products ─────────────────────────────────────────────
-    print("  Computing top products …")
+    print("  Computing top products...")
     top_products_df = compute_top_products(df, 200)
     top_products_list = [
         {
@@ -196,20 +196,20 @@ def run(spark: SparkSession):
             os.path.join(PROCESSED_DIR, "top_products.parquet")
         )
     except Exception as e:
-        print("  ℹ (Hadoop winutils fallback: saving top_products as JSON)")
+        print("  Info: (Hadoop winutils fallback: saving top_products as JSON)")
         with open(os.path.join(PROCESSED_DIR, "top_products.json"), "w") as f:
             json.dump(top_products_list, f, indent=2)
 
     # ── Conversion Funnel ────────────────────────────────────────
-    print("  Computing conversion funnel …")
+    print("  Computing conversion funnel...")
     funnel = compute_conversion_funnel(df)
 
     # ── Interaction Matrix ───────────────────────────────────────
-    print("  Building user-product interaction matrix …")
+    print("  Building user-product interaction matrix...")
     matrix_df = build_interaction_matrix(df)
     matrix_path_csv = os.path.join(PROCESSED_DIR, "user_product_matrix.csv")
 
-    print("  Saving user_product_matrix to CSV …")
+    print("  Saving user_product_matrix to CSV...")
     pdf = matrix_df.toPandas()
     pdf.to_csv(matrix_path_csv, index=False)
 
@@ -217,14 +217,14 @@ def run(spark: SparkSession):
     print(f"  Matrix size: {matrix_size:,} user-product pairs")
 
     # ── User Activity ────────────────────────────────────────────
-    print("  Computing user activity stats …")
+    print("  Computing user activity stats...")
     user_activity_df = compute_user_activity(df)
     try:
         user_activity_df.write.mode("overwrite").parquet(
             os.path.join(PROCESSED_DIR, "user_activity.parquet")
         )
     except Exception:
-        print("  ℹ (Hadoop winutils fallback: user_activity.parquet skipped)")
+        print("  Info: (Hadoop winutils fallback: user_activity.parquet skipped)")
 
     # ── Summary Stats ────────────────────────────────────────────
     elapsed = time.time() - t0
@@ -241,8 +241,8 @@ def run(spark: SparkSession):
     with open(stats_path, "w") as f:
         json.dump(stats, f, indent=2)
 
-    print(f"\n  ✓ Clickstream processing complete in {elapsed:.1f}s")
-    print(f"  ✓ Stats saved → {stats_path}")
+    print(f"\n  [OK] Clickstream processing complete in {elapsed:.1f}s")
+    print(f"  [OK] Stats saved -> {stats_path}")
     return stats
 
 

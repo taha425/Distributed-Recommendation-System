@@ -66,10 +66,10 @@
 
   <div class="sidebar-section-label" style="margin-top:auto">SYSTEM</div>
   <div class="system-status-box" id="system-status-box">
-    <div class="status-row"><span class="dot dot-green"></span><span>Spark MLlib</span></div>
-    <div class="status-row"><span class="dot dot-green"></span><span>ALS Model</span></div>
-    <div class="status-row"><span class="dot dot-yellow"></span><span>Elasticsearch</span></div>
-    <div class="status-row"><span class="dot dot-green"></span><span>Redis Cache</span></div>
+    <div class="status-row"><span class="dot dot-green" id="status-spark"></span><span>Spark MLlib</span></div>
+    <div class="status-row"><span class="dot dot-green" id="status-als"></span><span>ALS Model</span></div>
+    <div class="status-row"><span class="dot dot-yellow" id="status-es"></span><span>Elasticsearch</span></div>
+    <div class="status-row"><span class="dot dot-green" id="status-redis"></span><span>Redis Cache</span></div>
   </div>
 </nav>
 
@@ -83,6 +83,10 @@
       <span class="page-badge">Live</span>
     </div>
     <div class="topbar-right">
+      <div class="topbar-stat">
+        <span class="ts-label">Live Time</span>
+        <span class="ts-value" id="live-clock" style="font-family:'JetBrains Mono',monospace;font-size:0.9rem">—</span>
+      </div>
       <div class="topbar-stat">
         <span class="ts-label">Cache Hit Rate</span>
         <span class="ts-value" id="cache-hit-rate">—</span>
@@ -269,7 +273,7 @@
           <thead>
             <tr>
               <th>#</th>
-              <th>Product ID</th>
+              <th>Product</th>
               <th>Total Interactions</th>
               <th>Purchases</th>
               <th>Views</th>

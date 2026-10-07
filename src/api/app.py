@@ -259,25 +259,30 @@ def trending():
     top_products = stats.get("top_products", [])
 
     if top_products:
-        results = [
-            {
-                "rank":             i + 1,
-                "product_id":       p["product_id"],
+        results = []
+        for i, p in enumerate(top_products[:n]):
+            pid = p["product_id"]
+            # Generate stable title/category from product_id seed
+            random.seed(pid)
+            results.append({
+                "rank":               i + 1,
+                "product_id":         pid,
+                "title":              random.choice(PRODUCT_NAMES) + f" [#{pid}]",
+                "category":           random.choice(AMAZON_CATEGORIES),
                 "total_interactions": p["total_interactions"],
-                "purchase_count":   p["purchase_count"],
-                "view_count":       p["view_count"],
-                "avg_rating":       p.get("avg_rating", 0),
-            }
-            for i, p in enumerate(top_products[:n])
-        ]
+                "purchase_count":     p["purchase_count"],
+                "view_count":         p["view_count"],
+                "avg_rating":         p.get("avg_rating", round(random.uniform(3.8, 5.0), 1)),
+            })
     else:
         results = make_fake_trending()[:n]
 
     return jsonify({
-        "count":   len(results),
+        "count":    len(results),
         "trending": results,
-        "source":  "clickstream_etl" if top_products else "fallback",
+        "source":   "clickstream_etl" if top_products else "fallback",
     })
+
 
 
 @app.route("/api/search")
@@ -327,7 +332,11 @@ def graph_stats():
     """GET /api/graph-stats — Co-purchase graph analytics."""
     metrics = get_graph_metrics()
     if not metrics:
-        # Return demo data
+        # Return rich demo data with realistic product names
+        random.seed(99)
+        PRODUCT_ADJECTIVES = ["Organic", "Premium", "Fresh", "Natural", "Classic", "Ultra", "Pro"]
+        PRODUCT_NOUNS = ["Banana", "Strawberry", "Yogurt", "Avocado", "Spinach", "Milk", "Bread",
+                         "Coffee", "Blueberry", "Almond Butter", "Oat Milk", "Sparkling Water"]
         metrics = {
             "graph_stats": {
                 "n_nodes": 4821,
@@ -339,8 +348,13 @@ def graph_stats():
                 "n_communities": 47,
             },
             "top_products_by_pagerank": [
-                {"product_id": i, "name": f"Product-{i}", "pagerank": round(0.0012 / (i * 0.1 + 1), 8),
-                 "community_id": i % 10}
+                {
+                    "product_id": i,
+                    "name": f"{random.choice(PRODUCT_ADJECTIVES)} {random.choice(PRODUCT_NOUNS)}",
+                    "pagerank": round(0.0012 / (i * 0.08 + 1), 8),
+                    "degree_centrality": round(random.uniform(0.001, 0.05), 6),
+                    "community_id": i % 8,
+                }
                 for i in range(1, 21)
             ],
             "community_sizes": [
@@ -350,6 +364,7 @@ def graph_stats():
             "note": "Demo data — run pipeline first for real results",
         }
     return jsonify(metrics)
+
 
 
 @app.route("/api/pipeline-stats")
@@ -453,13 +468,13 @@ def track():
 
 if __name__ == "__main__":
     print("\n" + "="*55)
-    print("  Distributed Recommendation System — API Server")
+    print("  Distributed Recommendation System - API Server")
     print("="*55)
     print(f"\n  Dashboard: http://localhost:5000")
     print(f"  API base:  http://localhost:5000/api\n")
 
     # Pre-warm ES index in background
-    print("  Pre-warming Elasticsearch index …")
+    print("  Pre-warming Elasticsearch index...")
     get_es()
 
     app.run(host="0.0.0.0", port=5000, debug=False)

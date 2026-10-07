@@ -45,7 +45,7 @@ def load_order_baskets() -> dict:
     path = os.path.join(RAW_DIR, "instacart_order_products.csv")
     baskets = defaultdict(list)
     order_count = 0
-    print(f"  Loading order-product data (max {MAX_ORDERS:,} orders) …")
+    print(f"  Loading order-product data (max {MAX_ORDERS:,} orders)...")
     with open(path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         seen_orders = set()
@@ -66,7 +66,7 @@ def build_copurchase_graph(baskets: dict) -> nx.Graph:
       nodes = products
       edges = co-purchase count (products bought together in same order)
     """
-    print("  Building co-purchase graph …")
+    print("  Building co-purchase graph...")
     G = nx.Graph()
     edge_weights = defaultdict(int)
 
@@ -93,11 +93,11 @@ def build_copurchase_graph(baskets: dict) -> nx.Graph:
 
 def compute_pagerank(G: nx.Graph) -> dict:
     """Compute PageRank scores for all product nodes."""
-    print("  Computing PageRank …")
+    print("  Computing PageRank...")
     t0 = time.time()
     # Use personalized PageRank with edge weights
     pr = nx.pagerank(G, alpha=0.85, weight="weight", max_iter=100)
-    print(f"  ✓ PageRank done in {time.time()-t0:.1f}s")
+    print(f"  [OK] PageRank done in {time.time()-t0:.1f}s")
     return pr
 
 
@@ -107,7 +107,7 @@ def detect_communities(G: nx.Graph) -> dict:
     (approximation of Louvain algorithm).
     Returns: product_id → community_id
     """
-    print("  Detecting communities (Greedy Modularity) …")
+    print("  Detecting communities (Greedy Modularity)...")
     t0 = time.time()
     # Work on top 1,500 highest degree nodes for fast community detection
     if G.number_of_nodes() > 1500:
@@ -122,13 +122,13 @@ def detect_communities(G: nx.Graph) -> dict:
         for node in community:
             community_map[int(node)] = cid
 
-    print(f"  ✓ {len(communities)} communities detected in {time.time()-t0:.1f}s")
+    print(f"  [OK] {len(communities)} communities detected in {time.time()-t0:.1f}s")
     return community_map, len(communities)
 
 
 def compute_centrality(G: nx.Graph) -> dict:
     """Compute degree centrality and betweenness centrality (sampled)."""
-    print("  Computing centrality measures …")
+    print("  Computing centrality measures...")
     degree_centrality = nx.degree_centrality(G)
     # Betweenness is O(V * E); sample top 500 nodes for speed
     if G.number_of_nodes() > 500:
@@ -142,7 +142,7 @@ def compute_centrality(G: nx.Graph) -> dict:
 
 def run():
     os.makedirs(PROCESSED_DIR, exist_ok=True)
-    print("\n[Graph Analysis] Starting …")
+    print("\n[Graph Analysis] Starting...")
     t0 = time.time()
 
     # ── Load data ─────────────────────────────────────────────
@@ -153,7 +153,7 @@ def run():
     G = build_copurchase_graph(baskets)
 
     if G.number_of_nodes() == 0:
-        print("  ⚠ Empty graph — skipping analytics")
+        print("  Warning: Empty graph - skipping analytics")
         return {}
 
     # ── PageRank ─────────────────────────────────────────────
@@ -209,7 +209,7 @@ def run():
     graph_path = os.path.join(PROCESSED_DIR, "graph_metrics.json")
     with open(graph_path, "w") as f:
         json.dump(graph_metrics, f, indent=2)
-    print(f"  ✓ Graph metrics saved → {graph_path}")
+    print(f"  [OK] Graph metrics saved -> {graph_path}")
 
     # ── Save community assignments ───────────────────────────
     communities_path = os.path.join(PROCESSED_DIR, "product_communities.json")
@@ -220,9 +220,9 @@ def run():
     }
     with open(communities_path, "w") as f:
         json.dump(community_output, f)
-    print(f"  ✓ Communities saved → {communities_path}")
+    print(f"  [OK] Communities saved -> {communities_path}")
 
-    print(f"\n  ✅ Graph analysis complete in {elapsed:.1f}s")
+    print(f"\n  [OK] Graph analysis complete in {elapsed:.1f}s")
     return graph_metrics
 
 

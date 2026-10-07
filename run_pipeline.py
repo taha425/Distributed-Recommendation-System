@@ -53,7 +53,7 @@ def check_raw_data() -> bool:
 
 
 def main():
-    banner("Distributed Recommendation System — Pipeline Runner")
+    banner("Distributed Recommendation System - Pipeline Runner")
     t_total = time.time()
 
     pipeline_summary = {
@@ -66,7 +66,7 @@ def main():
         step(1, "Data Generation (Amazon + Instacart Synthetic)")
 
         if check_raw_data():
-            print("  ℹ Raw data already exists. Skipping generation.")
+            print("  Info: Raw data already exists. Skipping generation.")
             print("  (Delete data/raw/ to regenerate)")
         else:
             t0 = time.time()
@@ -78,9 +78,9 @@ def main():
                 "time_sec": round(elapsed, 1),
             }
     else:
-        print("\n  ℹ Skipping data generation (--skip-data flag or selective run)")
+        print("\n  Info: Skipping data generation (--skip-data flag or selective run)")
         if not check_raw_data():
-            print("\n  ❌ ERROR: Raw data not found! Run without --skip-data first.")
+            print("\n  ERROR: Raw data not found! Run without --skip-data first.")
             sys.exit(1)
 
     # ── Step 2: Clickstream ETL ───────────────────────────────────────────────

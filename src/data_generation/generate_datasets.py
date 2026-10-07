@@ -105,11 +105,11 @@ def make_product_name(category: str, pid: int) -> str:
     nouns = CATEGORY_NOUNS.get(category, DEFAULT_NOUNS)
     noun = random.choice(nouns)
     brand_id = pid % 500 + 1
-    return f"{adj} {noun} — Brand-{brand_id:04d}"
+    return f"{adj} {noun} - Brand-{brand_id:04d}"
 
 
 def generate_amazon_products(path: str):
-    print(f"  Generating {N_PRODUCTS:,} products …")
+    print(f"  Generating {N_PRODUCTS:,} products...")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
@@ -126,12 +126,12 @@ def generate_amazon_products(path: str):
             prime = random.random() > 0.3
             w.writerow([pid, title, cat, price, avg_r, n_rat, brand, prime])
             if pid % 10_000 == 0:
-                print(f"    … {pid:,} products done")
-    print(f"  ✓ Products saved → {path}")
+                print(f"    ... {pid:,} products done")
+    print(f"  [OK] Products saved -> {path}")
 
 
 def generate_amazon_reviews(path: str):
-    print(f"  Generating {N_REVIEWS:,} reviews (interactions) …")
+    print(f"  Generating {N_REVIEWS:,} reviews (interactions)...")
     start_ts = datetime(2020, 1, 1).timestamp()
     end_ts   = datetime(2024, 12, 31).timestamp()
 
@@ -139,7 +139,7 @@ def generate_amazon_reviews(path: str):
     user_weights    = np.random.zipf(1.3, N_USERS);    user_weights    = user_weights / user_weights.sum()
     product_weights = np.random.zipf(1.5, N_PRODUCTS); product_weights = product_weights / product_weights.sum()
 
-    print("    Pre-sampling user and product distributions for high-speed generation …")
+    print("    Pre-sampling user and product distributions for high-speed generation...")
     # Batch sample 500K at a time to prevent np.random.choice bottleneck in Python loop
     BATCH_SIZE = 500_000
 
@@ -167,13 +167,13 @@ def generate_amazon_reviews(path: str):
                 w.writerow([rid, uid, pid, rating, evt, ts, sess, dwell])
                 rid += 1
 
-            print(f"    … {rid - 1:,} / {N_REVIEWS:,} reviews done")
-    print(f"  ✓ Reviews saved → {path}")
+            print(f"    ... {rid - 1:,} / {N_REVIEWS:,} reviews done")
+    print(f"  [OK] Reviews saved -> {path}")
 
 
 def generate_instacart_orders(orders_path: str, order_products_path: str,
                                products_path: str, aisles_path: str, depts_path: str):
-    print(f"  Generating {N_ORDERS:,} Instacart orders …")
+    print(f"  Generating {N_ORDERS:,} Instacart orders...")
 
     # --- aisles ---
     os.makedirs(os.path.dirname(aisles_path), exist_ok=True)
@@ -246,9 +246,9 @@ def generate_instacart_orders(orders_path: str, order_products_path: str,
                 prod_counter += 1
 
             if oid % 300_000 == 0:
-                print(f"    … {oid:,} orders done ({prod_counter:,} products)")
+                print(f"    ... {oid:,} orders done ({prod_counter:,} products)")
 
-    print(f"  ✓ Instacart data saved")
+    print("  [OK] Instacart data saved")
 
 
 def main():
@@ -274,7 +274,7 @@ def main():
     )
 
     elapsed = time.time() - t0
-    print(f"\n✅ All datasets generated in {elapsed:.1f}s")
+    print(f"\n[OK] All datasets generated in {elapsed:.1f}s")
     print(f"   Saved to: {os.path.abspath(BASE_DIR)}")
 
 

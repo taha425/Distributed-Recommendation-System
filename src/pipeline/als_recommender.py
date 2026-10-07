@@ -55,12 +55,12 @@ def load_matrix(spark: SparkSession):
     parquet_path = os.path.join(PROCESSED_DIR, "user_product_matrix.parquet")
 
     if os.path.isfile(csv_path):
-        print(f"  Loading interaction matrix from CSV ({csv_path}) …")
+        print(f"  Loading interaction matrix from CSV ({csv_path})...")
         df = spark.read.option("header", "true").csv(csv_path)
         df = df.withColumn("user_id", F.col("user_id").cast(IntegerType()))
         df = df.withColumn("product_id", F.col("product_id").cast(IntegerType()))
     elif os.path.exists(parquet_path):
-        print(f"  Loading interaction matrix from Parquet ({parquet_path}) …")
+        print(f"  Loading interaction matrix from Parquet ({parquet_path})...")
         df = spark.read.parquet(parquet_path)
     else:
         raise FileNotFoundError("user_product_matrix file not found.")
@@ -89,7 +89,7 @@ def load_products(spark: SparkSession):
 def train_als(matrix_df):
     """Train ALS model with train/validation split."""
     print(f"  Training ALS model (rank={ALS_RANK}, iter={ALS_MAX_ITER}, "
-          f"regParam={ALS_REG_PARAM}, implicit={ALS_IMPLICIT}) …")
+          f"regParam={ALS_REG_PARAM}, implicit={ALS_IMPLICIT})...")
 
     train_df, val_df = matrix_df.randomSplit([0.85, 0.15], seed=42)
     train_df.cache()
@@ -110,7 +110,7 @@ def train_als(matrix_df):
     t0 = time.time()
     model = als.fit(train_df)
     train_time = time.time() - t0
-    print(f"  ✓ Model trained in {train_time:.1f}s")
+    print(f"  [OK] Model trained in {train_time:.1f}s")
 
     # ── Evaluate on validation ─────────────────────────────────
     if not ALS_IMPLICIT:
@@ -131,7 +131,7 @@ def train_als(matrix_df):
 
 def generate_recommendations(model, spark: SparkSession, products_df):
     """Generate top-N recommendations for users."""
-    print(f"  Generating Top-{TOP_N} recommendations for users …")
+    print(f"  Generating Top-{TOP_N} recommendations for users...")
     t0 = time.time()
 
     # Limit to top 2,000 distinct active users for fast, lightweight local dev execution
@@ -159,15 +159,15 @@ def generate_recommendations(model, spark: SparkSession, products_df):
     )
 
     elapsed = time.time() - t0
-    print(f"  ✓ Recommendations generated in {elapsed:.1f}s")
+    print(f"  [OK] Recommendations generated in {elapsed:.1f}s")
 
     # Write full recommendations as parquet
     recs_parquet_path = os.path.join(PROCESSED_DIR, "recommendations.parquet")
     try:
         enriched.write.mode("overwrite").parquet(recs_parquet_path)
-        print(f"  ✓ Recommendations saved → {recs_parquet_path}")
+        print(f"  [OK] Recommendations saved -> {recs_parquet_path}")
     except Exception:
-        print("  ℹ (Hadoop winutils fallback: saving recommendations via Pandas)")
+        print("  Info: (Hadoop winutils fallback: saving recommendations via Pandas)")
         try:
             pdf = enriched.toPandas()
             pdf.to_parquet(recs_parquet_path, index=False)
@@ -205,14 +205,14 @@ def generate_recommendations(model, spark: SparkSession, products_df):
     recs_json_path = os.path.join(PROCESSED_DIR, "recommendations.json")
     with open(recs_json_path, "w") as f:
         json.dump(recs_dict, f)
-    print(f"  ✓ Recommendation sample saved → {recs_json_path}")
+    print(f"  [OK] Recommendation sample saved -> {recs_json_path}")
 
     return enriched, elapsed
 
 
 def run(spark: SparkSession):
     os.makedirs(PROCESSED_DIR, exist_ok=True)
-    print("\n[ALS Recommender] Starting …")
+    print("\n[ALS Recommender] Starting...")
 
     matrix_df   = load_matrix(spark)
     products_df = load_products(spark)
@@ -230,9 +230,9 @@ def run(spark: SparkSession):
     model_path = os.path.join(PROCESSED_DIR, "als_model")
     try:
         model.write().overwrite().save(model_path)
-        print(f"  ✓ Model saved → {model_path}")
+        print(f"  [OK] Model saved -> {model_path}")
     except Exception:
-        print("  ℹ (Hadoop winutils fallback: skipping Spark native model dir save)")
+        print("  Info: (Hadoop winutils fallback: skipping Spark native model dir save)")
 
     # Generate recommendations
     recs_df, recs_time = generate_recommendations(model, spark, products_df)
@@ -274,9 +274,9 @@ def run(spark: SparkSession):
     metrics_path = os.path.join(PROCESSED_DIR, "model_metrics.json")
     with open(metrics_path, "w") as f:
         json.dump(metrics, f, indent=2)
-    print(f"  ✓ Metrics saved → {metrics_path}")
+    print(f"  [OK] Metrics saved -> {metrics_path}")
 
-    print(f"\n  ✅ ALS pipeline complete!")
+    print(f"\n  [OK] ALS pipeline complete!")
     return metrics
 
 

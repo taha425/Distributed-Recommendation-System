@@ -76,7 +76,7 @@ class ElasticsearchSim:
 
     def build_index(self, products_path: str):
         """Index all products from CSV."""
-        print("  [ES] Building product index …")
+        print("  [ES] Building product index...")
         with open(products_path, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
